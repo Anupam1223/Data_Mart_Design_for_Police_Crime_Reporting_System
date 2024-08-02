@@ -1,0 +1,41 @@
+CREATE OR REPLACE PROCEDURE sp_reclean_location AS
+	lv_bad_location_id NUMERIC(8,2); 
+	lv_location_code NUMERIC(8,2);
+	lv_location_name VARCHAR2(20);
+	lv_region_id NUMERIC(8,2);
+	db_source VARCHAR2(20);
+    BEGIN
+        DECLARE
+            CURSOR clean_bad_data_location IS SELECT *  FROM bad_data_location;
+        BEGIN
+            OPEN clean_bad_data_location ;
+                LOOP
+                FETCH clean_bad_data_location  INTO lv_bad_location_id, lv_location_code, lv_location_name, lv_region_id, db_source;
+                EXIT WHEN clean_bad_data_location  %notfound;
+
+                    IF lv_location_name IS NULL THEN
+		                lv_location_name:= 'UNDEFINED';
+
+                    ELSIF lv_region_id IS NULL THEN
+		                lv_region_id := NULL;
+
+                    ELSE
+		                lv_location_name:=lv_location_name;
+		
+                    END IF;
+
+                    INSERT INTO clean_data_location VALUES (lv_bad_location_id, lv_location_code, 	
+			lv_location_name, lv_region_id, db_source);
+                END LOOP;
+            CLOSE clean_bad_data_location ;
+        END clean_bad_data_location ;
+    END  sp_reclean_location;
+
+begin
+sp_reclean_location;
+end;
+
+select * from clean_data_location;
+----- rows are considered as bad data when we encounter such cases ----------
+
+-----------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,16 @@
+Sum of SUM(TOTAL_NO_OF_CRIME),Column Labels,,,,
+Row Labels,2015,2016,2017,2019,Grand Total
+"Amelia	 Bob Simmons",,,,2,2
+Ashley Andrew,2,2,,,4
+Burt Bashir,1,1,,,2
+Callum Chapman,3,1,,,4
+Drew Dayton,2,1,,,3
+Ewan Ellen,3,1,,,4
+Gilly Gerkin,3,2,,,5
+"Kimberly	 Randall",,,,2,2
+"Lennie	 Avaline Thompsett",4,,,,4
+"Mary	 Beth Aitken",,,,2,2
+"Nicholas	 Parsons",,,2,,2
+"Stephanie	 Gill",,2,,,2
+(blank),27,44,40,,111
+Grand Total,45,54,42,6,147

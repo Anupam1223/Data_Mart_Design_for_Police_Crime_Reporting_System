@@ -1,0 +1,52 @@
+CREATE OR REPLACE PROCEDURE sp_reclean_crime AS
+	lv_bad_crime_id NUMERIC(8,2); 
+	lv_crime_code NUMERIC(8,2);
+	lv_crime_name VARCHAR2(20);
+	lv_status VARCHAR2(20);
+	lv_reported_date DATE;
+	lv_closed_date DATE;
+	lv_police_officer_id NUMERIC(8,2);
+	location_id NUMERIC(8,2);
+	db_source VARCHAR2(20);
+    BEGIN
+        DECLARE
+            CURSOR clean_bad_data_crime IS SELECT *  FROM bad_data_crime;
+        BEGIN
+            OPEN clean_bad_data_crime;
+                LOOP
+                FETCH clean_bad_data_crime INTO lv_bad_crime_id, lv_crime_code, lv_crime_name, lv_status, lv_reported_date, lv_closed_date, lv_police_officer_id,  location_id, db_source;
+                EXIT WHEN clean_bad_data_crime %notfound;
+
+                    IF lv_crime_name IS NULL THEN
+		                lv_crime_name := 'UNDEFINED';
+
+                    ELSIF lv_closed_date <= lv_reported_date THEN
+		                lv_closed_date := sysdate;
+
+                    ElSIF lv_police_officer_id IS NULL THEN
+		                lv_police_officer_id:= NULL;
+
+                    ELSIF lv_status='CLOSED' AND lv_closed_date IS NULL THEN
+		                lv_closed_date:=sysdate;
+
+                    ELSE
+		                lv_crime_name:=lv_crime_name;
+		
+                    END IF;
+
+                    INSERT INTO clean_data_crime VALUES (lv_bad_crime_id, lv_crime_code, lv_crime_name, lv_status, lv_reported_date, lv_closed_date, lv_police_officer_id,  location_id, db_source);
+                END LOOP;
+            CLOSE clean_bad_data_crime;
+        END clean_bad_data_crime;
+    END sp_reclean_crime;
+
+begin
+sp_reclean_crime;
+end;
+
+----- rows are considered as bad data when we encounter such cases ----------
+closed date is lesser than reported date.
+crime name is not provided
+police officer not allocated
+crime date is not provided for closed crime
+-----------------------------------------------------------------------------------------------------------------

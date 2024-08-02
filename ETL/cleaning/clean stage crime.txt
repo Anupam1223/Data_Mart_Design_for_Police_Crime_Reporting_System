@@ -1,0 +1,89 @@
+
+----- rows are considered as bad data when we encounter such cases ----------
+closed date is lesser than reported date.
+crime name is not provided
+police officer not allocated
+crime date is not provided for closed crime
+-----------------------------------------------------------------------------------------------------------------
+
+drop table bad_data_crime;
+drop table clean_data_crime;
+delete from clean_data_crime;
+delete from bad_data_crime;
+select * from bad_data_crime;
+select * from clean_data_crime;
+
+CREATE TABLE clean_data_crime(
+    	clean_crime_id NUMERIC(8,2) NOT NULL,
+	crime_code	NUMERIC(8,2),
+	crime_name	VARCHAR2(20),
+	status	VARCHAR2(20),
+	reported_date	DATE,
+   	closed_date	DATE,
+   	police_officer_id NUMERIC(8,2),
+   	location_id NUMERIC(8,2),
+   	table_source VARCHAR2(30),
+	CONSTRAINT	pk__clean_crime_id PRIMARY KEY (clean_crime_id) 
+);
+
+CREATE TABLE bad_data_crime(
+    	bad_crime_id NUMERIC(8,2) NOT NULL,
+	crime_code	NUMERIC(8,2),
+	crime_name	VARCHAR2(20),
+	status	VARCHAR2(20),
+	reported_date	DATE,
+   	closed_date	DATE,
+   	police_officer_id NUMERIC(8,2),
+   	location_id NUMERIC(8,2),
+   	table_source VARCHAR2(30),
+	CONSTRAINT	pk__bad_crime_id PRIMARY KEY (bad_crime_id) 
+);
+
+CREATE OR REPLACE PROCEDURE sp_seperate_clean_and_bad_data_crime AS
+	lv_crime_id NUMERIC(8,2); 
+	lv_crime_code NUMERIC(8,2);
+	lv_crime_name VARCHAR2(20);
+	lv_status VARCHAR2(20);
+	lv_reported_date DATE;
+	lv_closed_date DATE;
+	lv_police_officer_id NUMERIC(8,2);
+	location_id NUMERIC(8,2);
+	db_source VARCHAR2(20);
+    BEGIN
+        DECLARE
+            CURSOR check_clean_data_crime IS SELECT *  FROM stage_crime;
+        BEGIN
+
+            DELETE FROM bad_data_crime;
+            DELETE FROM clean_data_crime;
+
+            OPEN check_clean_data_crime;
+                LOOP
+                FETCH check_clean_data_crime INTO lv_crime_id, lv_crime_code, lv_crime_name, lv_status, lv_reported_date, lv_closed_date, lv_police_officer_id,  location_id, db_source;
+                EXIT WHEN check_clean_data_crime %notfound;
+
+                    IF lv_crime_name IS NOT NULL AND lv_police_officer_id IS NOT NULL THEN
+                        
+                        IF lv_status = 'CLOSED' AND lv_reported_date IS NOT NULL AND lv_closed_date IS NOT NULL AND TO_DATE( lv_reported_date, 'mm/dd/yyyy') <= TO_DATE( lv_closed_date, 'mm/dd/yyyy')  THEN 
+                            INSERT INTO clean_data_crime VALUES (lv_crime_id, lv_crime_code, lv_crime_name, lv_status, lv_reported_date, lv_closed_date, lv_police_officer_id,  location_id, db_source);
+
+                        ELSIF lv_status = 'OPEN' OR lv_status = 'ESCALATE' AND lv_closed_date IS NULL AND lv_reported_date IS NOT NULL THEN
+                            INSERT INTO clean_data_crime VALUES (lv_crime_id, lv_crime_code, lv_crime_name, lv_status, lv_reported_date, lv_closed_date, lv_police_officer_id,  location_id, db_source);
+                        
+                        ELSE
+                            INSERT INTO bad_data_crime VALUES (lv_crime_id, lv_crime_code, lv_crime_name, lv_status, lv_reported_date, lv_closed_date, lv_police_officer_id,  location_id, db_source);
+                        END IF;
+
+                    ELSE
+                        INSERT INTO bad_data_crime VALUES (lv_crime_id, lv_crime_code, lv_crime_name, lv_status, lv_reported_date, lv_closed_date, lv_police_officer_id,  location_id, db_source);
+
+                    END IF;
+                END LOOP;
+            CLOSE check_clean_data_crime;
+        END check_clean_data_crime;
+    END sp_seperate_clean_and_bad_data_crime;
+
+begin
+sp_seperate_clean_and_bad_data_crime;
+end;
+

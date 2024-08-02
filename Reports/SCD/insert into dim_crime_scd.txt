@@ -1,0 +1,6 @@
+INSERT INTO dim_crime_scd VALUES (74,'Drugs Offence', 'Escalate', 'y','n', 115, '-');
+INSERT INTO dim_crime_scd VALUES (75,'Violent Crime', 'Closed', 'y','y', 215, '-');
+INSERT INTO dim_crime_scd VALUES (76,'Violent Crime', 'OPEN', 'y','n', 315, '-');
+INSERT INTO dim_crime_scd VALUES (77,'robbery', 'OPEN', 'y','n', 415, '-');
+INSERT INTO dim_crime_scd VALUES (78,'Drugs Offence', 'CLOSED', 'y','y', 115, '2021/12/09');
+INSERT INTO dim_crime_scd VALUES (79,'Violent Crime', 'CLOSED', 'y','n', 315, '2020/03/14');

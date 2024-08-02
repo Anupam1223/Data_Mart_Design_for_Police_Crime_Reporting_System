@@ -1,0 +1,55 @@
+-------------- sequence 
+create sequence seq_dim_time
+Minvalue 1
+MaxValue 100000
+Start With 1
+Increment by 1;
+
+--------------- trigger
+create or replace TRIGGER tr_dim_time
+BEFORE INSERT ON dim_time 
+FOR EACH ROW 
+BEGIN
+    SELECT seq_dim_time.NEXTVAL INTO :NEW.time_id FROM SYS.DUAL;   
+END tr_dim_time;
+
+---------------- procedure
+create or replace procedure sp_load_time_dim AS
+    lv_reported_date DATE;  lv_closed_date DATE;
+    lv_day_dest VARCHAR2(10);  lv_month_dest VARCHAR2(10);
+    lv_year_dest VARCHAR2(10); lv_row_exists NUMERIC(8,2);
+    cursor cursor_from_source is 
+        select reported_date, closed_date from transformation_crime;
+begin
+    open cursor_from_source;
+    loop 
+        fetch cursor_from_source into lv_reported_date, lv_closed_date;
+        exit when cursor_from_source%notfound;
+        lv_year_dest := to_char(lv_reported_date, 'yyyy');
+        lv_month_dest := to_char(lv_reported_date, 'mm');
+        lv_day_dest := to_char(lv_reported_date, 'dd');
+        select COUNT(*) INTO lv_row_exists FROM DIM_TIME WHERE day = lv_day_dest AND 
+        month = lv_month_dest AND year = lv_year_dest;
+        IF lv_row_exists = 0 THEN
+            INSERT INTO dim_time VALUES ( seq_dim_time.NEXTVAL, to_char(lv_reported_date, 'dd'), to_char(lv_reported_date, 'mm'), to_char(lv_reported_date, 'yyyy'));
+        END IF;
+        IF lv_closed_date IS NOT NULL THEN
+            lv_year_dest := to_char(lv_closed_Date, 'yyyy');
+            lv_month_dest := to_char(lv_closed_date, 'mm');
+            lv_day_dest := to_char(lv_closed_date, 'dd');
+            select COUNT(*) INTO lv_row_exists FROM DIM_TIME WHERE day = lv_day_dest AND 
+            month = lv_month_dest AND year = lv_year_dest;
+            IF lv_row_exists = 0 THEN
+            INSERT INTO dim_time VALUES ( seq_dim_time.NEXTVAL, to_char(lv_closed_date, 'dd'), to_char(lv_closed_date, 'mm'), to_char(lv_closed_date, 'yyyy'));
+            END IF;
+        END IF;
+    end loop;
+    close cursor_from_source;
+end sp_load_time_dim;
+
+delete from dim_time;
+select * from dim_time;
+
+begin
+sp_load_time_dim;
+end;

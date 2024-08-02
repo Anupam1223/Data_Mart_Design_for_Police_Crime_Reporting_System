@@ -1,0 +1,63 @@
+-------------- sequence 
+create sequence seq_fact_crime_related
+Minvalue 1
+MaxValue 100000
+Start With 1
+Increment by 1;
+
+CREATE OR REPLACE PROCEDURE sp_load_crime_related_fact AS
+    lv_crime_name VARCHAR2(50); 
+    lv_status VARCHAR2(10);
+    lv_reported_date DATE;
+    lv_closed_date DATE;
+    lv_crime_code NUMERIC(8,2);
+    lv_row_exists NUMERIC(8,2);
+    lv_police_id NUMERIC(8,1);
+    lv_location_id NUMERIC(8,1);
+    lv_source VARCHAR2(10);
+    lv_dim_time_id NUMERIC(8,2);
+    lv_dim_crime_id NUMERIC(8,2);
+    lv_dim_location_id NUMERIC(8,2);
+    lv_dim_officer_id NUMERIC(8,2);
+    lv_total_crime NUMERIC(8,2);
+    lv_crime_id NUMERIC(8,2);
+    lv_count NUMERIC(8,2) := 0 ;
+    
+    CURSOR cursor_from_source IS
+        SELECT reported_date, closed_date , crime_code, crime_name, status, police_officer_id, location_id, table_source, TRANSFER_CRIME_ID
+        FROM transformation_crime;
+BEGIN
+    OPEN cursor_from_source;
+    LOOP
+        FETCH cursor_from_source into lv_reported_date, lv_closed_date, lv_crime_code, lv_crime_name, lv_status, lv_police_id, lv_location_id, lv_source, lv_crime_id;
+        EXIT WHEN cursor_from_source%NOTFOUND;
+                
+            SELECT time_id into lv_dim_time_id from dim_time where day = to_char(lv_reported_date, 'dd') 
+            AND month = to_char(lv_reported_date, 'mm') AND year = to_char(lv_reported_date,'yyyy');
+
+            SELECT location_id INTO lv_dim_location_id FROM DIM_LOCATION WHERE location_code = lv_location_id;
+
+            IF lv_police_id IS NOT NULL THEN
+                SELECT officer_id INTO lv_dim_officer_id FROM DIM_POLICE_OFFICER WHERE officer_code = lv_police_id;
+                SELECT COUNT(*) INTO lv_row_exists FROM FACT_CRIME_RELATED WHERE crime_id = lv_crime_id AND location_id = lv_dim_location_id AND time_id = lv_dim_time_id
+                AND officer_id = lv_dim_officer_id;
+                IF lv_row_exists = 0 THEN
+                    SELECT COUNT(*) INTO lv_total_crime FROM transformation_crime WHERE crime_name = lv_crime_name AND police_officer_id = lv_police_id AND reported_date = lv_reported_date AND location_id = lv_location_id;
+                    INSERT INTO FACT_CRIME_RELATED  VALUES (lv_crime_id, lv_dim_location_id, lv_dim_officer_id, seq_fact_crime_related.NEXTVAL, lv_dim_time_id, lv_total_crime);
+                    
+                END IF;
+            ELSE
+                SELECT COUNT(*) INTO lv_row_exists FROM FACT_CRIME_RELATED WHERE crime_id = lv_crime_id AND location_id = lv_dim_location_id AND time_id = lv_dim_time_id;
+                IF lv_row_exists = 0 THEN
+                    SELECT COUNT(*) INTO lv_total_crime FROM transformation_crime WHERE crime_name = lv_crime_name AND reported_date = lv_reported_date AND location_id =lv_location_id;
+                    INSERT INTO FACT_CRIME_RELATED  VALUES (lv_crime_id, lv_dim_location_id, null, seq_fact_crime_related.NEXTVAL, lv_dim_time_id, lv_total_crime);
+                END IF;
+            END IF;
+    END LOOP;
+    CLOSE cursor_from_source;
+END sp_load_crime_related_fact;
+
+begin
+sp_load_crime_related_fact;
+end;
+---------------------------------------------------------------------------------------------------------------------

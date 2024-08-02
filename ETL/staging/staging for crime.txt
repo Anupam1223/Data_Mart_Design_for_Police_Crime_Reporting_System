@@ -1,0 +1,62 @@
+-----------------  for test -----------------------------
+DROP TABLE stage_crime;
+delete from stage_crime;
+select * from stage_crime;
+
+DECLARE
+BEGIN
+sp_stage_crime;
+END;
+------------------------------------------------------------
+
+DROP TABLE stage_crime;
+DROP SEQUENCE seq_stage_crime;
+
+CREATE TABLE stage_crime(
+    crime_id NUMERIC(8,2) NOT NULL,
+	crime_code	NUMERIC(8,2),
+	crime_name	VARCHAR2(20),
+	status	VARCHAR2(20),
+	reported_date	DATE,
+    closed_date	DATE,
+    police_officer_id NUMERIC(8,2),
+    location_id NUMERIC(8,2),
+    db_source VARCHAR2(30),
+
+	CONSTRAINT	pk_crime_id PRIMARY KEY (crime_id)
+);
+
+create sequence seq_stage_crime
+Minvalue 1
+MaxValue 100000
+Start With 1
+Increment by 1;
+
+
+CREATE OR REPLACE TRIGGER tr_stage_crime
+BEFORE INSERT ON stage_crime 
+FOR EACH ROW 
+BEGIN
+    SELECT seq_stage_crime.NEXTVAL INTO :NEW.crime_id FROM SYS.DUAL;   
+END tr_stage_crime;
+
+create or replace procedure sp_stage_crime is 
+    begin 
+            MERGE INTO stage_crime t_crime
+            USING crime_register s_crime
+            ON (t_crime.crime_code = s_crime.crime_id and t_crime.police_officer_id = s_crime.police_id)
+
+            WHEN NOT MATCHED THEN 
+                INSERT (crime_code, crime_name, status, reported_date, closed_date, police_officer_id, location_id, db_source)
+                VALUES (s_crime.crime_id, s_crime.crime_name, s_crime.crime_status, TO_DATE(s_crime.reported_date, 'MM/DD/YY'), TO_DATE(s_crime.closed_date, 'MM/DD/YY'), s_crime.police_id, s_crime.location_id, 'ps_wales');
+            
+            MERGE INTO stage_crime t_crime
+            USING (SELECT c_reported.reported_crime_id, c_type.crime_type_desc, c_reported.crime_status,c_reported.date_reported, c_reported.date_closed, p_allocation.d_emp_id , c_reported.fk2_station_id
+                                    from pl_reported_crime c_reported INNER JOIN  pl_crime_type c_type ON  c_reported.FK1_CRIME_TYPE_ID = c_type.CRIME_TYPE_ID
+		full JOIN pl_work_allocation p_allocation ON p_allocation.s_reported_crime_id = c_reported.reported_crime_id) s_crime
+            ON (t_crime.crime_code = s_crime.reported_crime_id and t_crime.police_officer_id = s_crime.d_emp_id)
+
+            WHEN NOT MATCHED THEN 
+                INSERT (crime_code, crime_name, status, reported_date, closed_date, police_officer_id, location_id, db_source)
+                VALUES (s_crime.reported_crime_id , s_crime.CRIME_TYPE_DESC, s_crime.crime_status, TO_DATE(s_crime.DATE_REPORTED, 'MM/DD/YY'), TO_DATE(s_crime.DATE_CLOSED, 'MM/DD/YY'), s_crime.d_emp_id ,s_crime.fk2_station_id, 'prcs');
+    end sp_stage_crime;

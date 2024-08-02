@@ -1,0 +1,42 @@
+-------------- sequence 
+create sequence seq_dim_location
+Minvalue 1
+MaxValue 100000
+Start With 1
+Increment by 1;
+
+---------------- procedure
+CREATE OR REPLACE PROCEDURE sp_load_location_dim AS
+    lv_location_name VARCHAR2(40); lv_region_name VARCHAR2(40); 
+    lv_street_name VARCHAR2(40); lv_location_code NUMERIC(8,2); 
+    lv_region_id VARCHAR2(10); lv_db_source VARCHAR2(10);
+    lv_row_exists NUMERIC(8,2);
+    CURSOR cursor_from_source IS
+        SELECT location_code, location_name ,region_id, db_source FROM transformation_location;
+BEGIN
+    OPEN cursor_from_source;
+    LOOP
+        FETCH cursor_from_source into lv_location_code, lv_location_name, lv_region_id, lv_db_source;
+        EXIT WHEN cursor_from_source%NOTFOUND;
+	IF lv_db_source = 'ps_wales' AND lv_region_id IS NOT NULL THEN
+		SELECT region_name INTO lv_region_name FROM region WHERE region_id = lv_region_id;
+		SELECT street_name INTO lv_street_name FROM location WHERE location_id = lv_location_code;
+	ELSIF lv_db_source = 'prcs' AND lv_region_id IS NOT NULL THEN
+		SELECT area_name INTO lv_region_name FROM pl_area WHERE area_id = lv_region_id;
+		lv_street_name := '';
+    ELSE
+        lv_region_name := ''; lv_street_name := '';
+    END IF;
+	SELECT COUNT(*) INTO lv_row_exists FROM DIM_LOCATION WHERE location_code = lv_location_code 
+    AND region_name = lv_region_name;
+    IF lv_row_exists = 0 THEN
+        INSERT INTO dim_location VALUES(seq_dim_location.NEXTVAL, lv_region_name, lv_location_name, 
+        lv_street_name, lv_location_code);
+    END IF; 
+    END LOOP;
+    CLOSE cursor_from_source;
+END sp_load_location_dim;
+
+begin
+sp_load_location_dim;
+end;

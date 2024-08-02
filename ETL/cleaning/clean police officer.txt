@@ -1,0 +1,76 @@
+DROP TABLE clean_data_police;
+DROP TABLE bad_data_police;
+select * from bad_data_police;
+select * from clean_data_police;
+
+CREATE TABLE clean_data_police(
+   	clean_police_id NUMERIC(8,2) NOT NULL,
+	police_code	NUMERIC(8,2),
+	police_first_name	VARCHAR2(20),
+	police_middle_name	VARCHAR2(20),
+	police_last_name	VARCHAR2(20),
+	gender VARCHAR2(20),
+	rank NUMERIC(8,2),
+   	db_source VARCHAR2(30),
+
+	CONSTRAINT	pk_clean_police_id PRIMARY KEY (clean_police_id)
+);
+
+CREATE TABLE bad_data_police(
+   	bad_police_id NUMERIC(8,2) NOT NULL,
+	police_code	NUMERIC(8,2),
+	police_first_name	VARCHAR2(20),
+	police_middle_name	VARCHAR2(20),
+	police_last_name	VARCHAR2(20),
+	gender VARCHAR2(20),
+	rank NUMERIC(8,2),
+   	db_source VARCHAR2(30),
+
+	CONSTRAINT	pk_bad_police_id PRIMARY KEY (bad_police_id)
+);
+
+CREATE OR REPLACE PROCEDURE sp_seperate_clean_and_bad_data_police AS
+	lv_police_id NUMERIC(8,2); 
+	lv_police_code NUMERIC(8,2);
+	lv_police_f_name VARCHAR2(30);
+    lv_police_m_name VARCHAR2(30);
+    lv_police_l_name VARCHAR2(30);
+    lv_gender VARCHAR2(30);
+	lv_rank NUMERIC(8,2);
+	db_source VARCHAR2(30);
+    BEGIN
+        DECLARE
+            CURSOR check_clean_data_police IS SELECT *  FROM stage_police_officer;
+        BEGIN
+
+            DELETE FROM bad_data_police;
+            DELETE FROM clean_data_police;
+
+            OPEN check_clean_data_police;
+                LOOP
+                FETCH check_clean_data_police INTO lv_police_id, lv_police_code, lv_police_f_name, lv_police_m_name, lv_police_l_name, lv_gender, lv_rank,  db_source;
+                EXIT WHEN check_clean_data_police %notfound;
+
+                    IF lv_police_f_name IS NOT NULL AND REGEXP_LIKE (REGEXP_REPLACE(lv_police_f_name, '\s'), '^[a-zA-Z]+$') THEN
+                        INSERT INTO clean_data_police VALUES (lv_police_id, lv_police_code, lv_police_f_name, lv_police_m_name, lv_police_l_name, lv_gender, lv_rank,  db_source);
+
+                    ELSE 
+                        INSERT INTO bad_data_police VALUES (lv_police_id, lv_police_code, lv_police_f_name, lv_police_m_name, lv_police_l_name, lv_gender, lv_rank,  db_source);
+
+                    END IF;
+
+                END LOOP;
+            CLOSE check_clean_data_police;
+        END check_clean_data_police;
+    END sp_seperate_clean_and_bad_data_police;
+
+
+begin 
+sp_seperate_clean_and_bad_data_police;
+end;
+
+INSERT INTO officer VALUES(16, '','','','10/11/2000','Female','Investigation', 10);
+INSERT INTO officer VALUES(17, '','','siwakoti','10/11/2001','male','', 1);
+INSERT INTO officer VALUES(18, '@sureh!','','','10/11/1999','male','law enforcement', 10);
+INSERT INTO officer VALUES(19, '@911Ramesh!','','','10/11/1999','male','law enforcement', 10);
+

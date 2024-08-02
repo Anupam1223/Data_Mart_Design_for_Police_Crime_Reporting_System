@@ -1,0 +1,22 @@
+
+
+
+drop table transformation_police;
+delete from transformation_police;
+select * from transformation_police;
+
+CREATE TABLE transformation_police(
+   	trns_police_id NUMERIC(8,2) NOT NULL,
+	police_code	NUMERIC(8,2),
+	police_first_name	VARCHAR2(20),
+	police_middle_name	VARCHAR2(20),
+	police_last_name	VARCHAR2(20),
+	gender VARCHAR2(20),
+	rank NUMERIC(8,2),
+   	db_source VARCHAR2(30),
+
+	CONSTRAINT	pk_clean_police_id PRIMARY KEY (clean_police_id)
+);
+
+INSERT INTO transformation_police (select * from clean_data_police)
+

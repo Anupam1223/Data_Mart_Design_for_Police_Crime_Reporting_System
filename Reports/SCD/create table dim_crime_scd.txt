@@ -1,0 +1,11 @@
+CREATE TABLE dim_crime_SCD (
+	crime_id	NUMERIC(8,2) NOT NULL,
+	crime_name	VARCHAR2(30),
+	current_status	VARCHAR2(10),
+	reported_date_flag	VARCHAR2(8),
+	current_closed_date_flag	VARCHAR2(8),
+	crime_code	NUMERIC(8,2),
+    relevant_upto VARCHAR2(10) NULL,
+
+	CONSTRAINT	pk_DIM_CRIME_SCD PRIMARY KEY (crime_id)
+);

@@ -1,0 +1,19 @@
+
+
+
+drop table transformation_location;
+delete from transformation_location;
+select * from transformation_location;
+
+CREATE TABLE transformation_location(
+   	transfer_location_id NUMERIC(8,2) NOT NULL,
+	location_code	NUMERIC(8,2),
+	location_name	VARCHAR2(20),
+	region_id	NUMERIC(8,2),
+   	 db_source VARCHAR2(30),
+
+	CONSTRAINT	pk_transfer_id PRIMARY KEY (transfer_location_id)
+);
+
+INSERT INTO transformation_location (select * from clean_data_location)
+

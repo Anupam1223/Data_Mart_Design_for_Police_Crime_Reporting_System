@@ -1,0 +1,52 @@
+select * from stage_police_officer;
+delete from stage_police_officer;
+drop table stage_police_officer;
+drop sequence seq_police_officer;
+
+BEGIN
+sp_stage_police_officer;
+END
+
+CREATE TABLE stage_police_officer(
+    police_id NUMERIC(8,2) NOT NULL,
+	police_code	NUMERIC(8,2),
+	police_first_name	VARCHAR2(20),
+    	police_middle_name	VARCHAR2(20),
+    	police_last_name	VARCHAR2(20),
+   	 gender VARCHAR2(20),
+	rank VARCHAR2(20),
+	db_source	VARCHAR2(30),
+
+	CONSTRAINT pk_stage_police_id PRIMARY KEY (police_id)
+);
+
+
+create sequence seq_police_officer
+Minvalue 1
+MaxValue 100000
+Start With 1
+Increment by 1;
+
+create or replace TRIGGER tr_police_officer
+BEFORE INSERT ON stage_police_officer
+FOR EACH ROW 
+BEGIN
+    SELECT seq_police_officer.NEXTVAL INTO :NEW.police_id FROM SYS.DUAL;   
+END tr_police_officer;
+
+create or replace procedure sp_stage_police_officer is 
+    begin 
+            MERGE INTO stage_police_officer t_officer
+            USING officer s_officer
+            ON (t_officer.police_code = s_officer.officer_id)
+            WHEN NOT MATCHED THEN 
+                INSERT (police_code, police_first_name, police_middle_name, police_last_name, gender, rank, db_source)
+                VALUES (s_officer.officer_id,s_officer.first_name, s_officer.middle_name, s_officer.last_name, s_officer.gender , s_officer.rank, 'officer (ps_wales)');
+            
+            MERGE INTO stage_police_officer t_officer
+            USING pl_police_employee s_officer
+            ON (t_officer.police_code = s_officer.emp_id)
+            WHEN NOT MATCHED THEN 
+                INSERT (police_code, police_first_name, police_middle_name, police_last_name,gender, rank, db_source)
+                VALUES (s_officer.emp_id,s_officer.emp_name,null, null, null,s_officer.emp_grade, 'pl_police_employee (prcs)');
+end sp_stage_police_officer;

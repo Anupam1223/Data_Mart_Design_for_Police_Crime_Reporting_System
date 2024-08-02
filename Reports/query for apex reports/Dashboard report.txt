@@ -1,0 +1,20 @@
+----------------------------- no of solved crime
+SELECT sum(total_no_of_crime), c.crime_name FROM fact_crime_related INNER JOIN dim_crime c ON fact_crime_related.crime_id = c.crime_id 
+where c.closed_date_flag = 'y' GROUP BY c.crime_name;
+
+-------------------------- most area with unsolved crime
+SELECT sum(total_no_of_crime), l.location_name FROM fact_crime_related 
+                                LEFT JOIN dim_location l ON fact_crime_related.location_id = l.location_id 
+                                GROUP BY l.location_name;
+
+---------------------- total cases looked by police officer
+SELECT sum(total_no_of_crime), p.fullname FROM fact_crime_related 
+                                LEFT JOIN dim_police_officer p ON fact_crime_related.officer_id = p.officer_id
+                                where p.fullname is not null and p.fullname != 'UNDEFINED'
+                                GROUP BY p.fullname;
+
+---------------------- most crime types where police are not assigned 
+SELECT sum(total_no_of_crime), c.crime_name FROM fact_crime_related
+                                INNER JOIN dim_crime c ON fact_crime_related.crime_id = c.crime_id 
+                                where fact_crime_related.officer_id is null
+                                GROUP BY c.crime_name;

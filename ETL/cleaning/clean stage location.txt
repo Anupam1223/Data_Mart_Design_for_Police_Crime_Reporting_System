@@ -1,0 +1,62 @@
+DROP TABLE clean_stage_location;
+DROP TABLE bad_data_location;
+select * from stage_location;
+select * from bad_data_location;
+select * from clean_data_location;
+
+CREATE TABLE clean_data_location(
+   	clean_location_id NUMERIC(8,2) NOT NULL,
+	location_code	NUMERIC(8,2),
+	location_name	VARCHAR2(20),
+	region_id	NUMERIC(8,2),
+   	 db_source VARCHAR2(30),
+
+	CONSTRAINT	pk_clean_location_id PRIMARY KEY (clean_location_id)
+);
+
+CREATE TABLE bad_data_location(
+   	 bad_location_id NUMERIC(8,2) NOT NULL,
+	location_code	NUMERIC(8,2),
+	location_name	VARCHAR2(20),
+	region_id	NUMERIC(8,2),
+   	 db_source VARCHAR2(30),
+
+	CONSTRAINT	pk_bad_location_id PRIMARY KEY (bad_location_id)
+);
+
+CREATE OR REPLACE PROCEDURE sp_seperate_clean_and_bad_data_location AS
+	lv_location_id NUMERIC(8,2); 
+	lv_location_code NUMERIC(8,2);
+	lv_location_name VARCHAR2(20);
+	lv_region_id NUMERIC(8,2);
+	db_source VARCHAR2(20);
+    BEGIN
+        DECLARE
+            CURSOR check_clean_data_location IS SELECT *  FROM stage_location;
+        BEGIN
+            DELETE FROM bad_data_location;
+            DELETE FROM clean_data_location;
+
+            OPEN check_clean_data_location;
+                LOOP
+                FETCH check_clean_data_location INTO lv_location_id, lv_location_code, lv_location_name, lv_region_id, db_source;
+                EXIT WHEN check_clean_data_location %notfound;
+                    
+                    IF lv_location_name IS NOT NULL AND lv_region_id IS NOT NULL THEN 
+                        INSERT INTO clean_data_location VALUES (lv_location_id, lv_location_code, lv_location_name, lv_region_id, db_source);
+
+                    ELSE
+                        INSERT INTO bad_data_location VALUES (lv_location_id, lv_location_code, lv_location_name, lv_region_id, db_source);
+
+                    END IF;
+                END LOOP;
+            CLOSE check_clean_data_location;
+        END check_clean_data_location;
+    END sp_seperate_clean_and_bad_data_location;
+
+begin 
+sp_seperate_clean_and_bad_data_location;
+end;
+
+
+

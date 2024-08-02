@@ -1,0 +1,37 @@
+CREATE OR REPLACE PROCEDURE sp_reclean_police AS
+	lv_police_id NUMERIC(8,2); 
+	lv_police_code NUMERIC(8,2);
+	lv_police_f_name VARCHAR2(30);
+    	lv_police_m_name VARCHAR2(30);
+    	lv_police_l_name VARCHAR2(30);
+    	lv_gender VARCHAR2(30);
+	lv_rank NUMERIC(8,2);
+	db_source VARCHAR2(30);
+    BEGIN
+        DECLARE
+            CURSOR clean_bad_data_police IS SELECT *  FROM bad_data_police;
+        BEGIN
+            OPEN clean_bad_data_police ;
+                LOOP
+                FETCH clean_bad_data_police  INTO lv_police_id, lv_police_code, lv_police_f_name, lv_police_m_name, lv_police_l_name, lv_gender, lv_rank,  db_source;
+                EXIT WHEN clean_bad_data_police  %notfound;
+
+                    IF lv_police_f_name IS NULL THEN
+		                lv_police_f_name:= 'UNDEFINED';
+
+                    ELSIF lv_police_f_name IS NOT NULL AND NOT REGEXP_LIKE (REGEXP_REPLACE(lv_police_f_name, '\s'), '^[a-zA-Z]+$') THEN
+                        lv_police_f_name:= 'UNDEFINED';
+
+                    END IF;
+
+                    INSERT INTO clean_data_police VALUES (lv_police_id, lv_police_code, lv_police_f_name, lv_police_m_name, lv_police_l_name, lv_gender, lv_rank,  db_source);
+                END LOOP;
+            CLOSE clean_bad_data_police ;
+        END clean_bad_data_police ;
+    END  sp_reclean_police;
+
+begin
+sp_reclean_police;
+end;
+
+select * from clean_data_police;

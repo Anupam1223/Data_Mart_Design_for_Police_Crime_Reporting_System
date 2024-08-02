@@ -1,0 +1,14 @@
+Sum of SUM(TOTAL_NO_OF_CRIME),Column Labels,,,,,,,,,,,,,,,
+,female,,female Total,Male,,,,Male Total,(blank),,,,,,(blank) Total,Grand Total
+Row Labels,"Amelia	 Bob Simmons","Mary	 Beth Aitken",,"Kimberly	 Randall","Lennie	 Avaline Thompsett","Nicholas	 Parsons","Stephanie	 Gill",,Ashley Andrew,Burt Bashir,Callum Chapman,Drew Dayton,Ewan Ellen,Gilly Gerkin,,
+armed robbery,,,,1,,,1,2,,,,,,,,2
+Black mail,,1,1,,,,,,,,,,,,,1
+Drugs Offence,,,,,,,,,1,,,,1,1,3,3
+forgery,,,,,,,,,1,,1,1,1,1,5,5
+hit and run,,,,,1,,,1,,,,,,,,1
+murder,,,,,,1,,1,,,,,,,,1
+robbery,,,,,,,,,,,1,,1,1,3,3
+Theft,1,,1,,1,,,1,,,,,,,,2
+UNDEFINED,1,1,2,1,2,1,1,5,,,,,,,,7
+Violent Crime,,,,,,,,,2,2,2,2,1,2,11,11
+Grand Total,2,2,4,2,4,2,2,10,4,2,4,3,4,5,22,36

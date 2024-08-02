@@ -1,0 +1,76 @@
+in ps wales data we are considering location as a station
+
+structure
+--------------
+crime_register -> location -> region
+pl_reported_crime -> station -> pl_area
+
+in stage_crime there is location_id which is equivalent to location_code in stage_location
+---------------------------------------------------------------------------------------------------------------------------------------
+
+-----------------  for test -----------------------------
+DROP TABLE stage_location;
+delete from stage_location;
+select * from stage_location;
+
+DECLARE
+BEGIN
+sp_stage_location;
+END;
+------------------------------------------------------------
+
+DROP TABLE stage_location;
+DROP SEQUENCE seq_stage_location;
+
+CREATE TABLE stage_location(
+    	location_id NUMERIC(8,2) NOT NULL,
+	location_code	NUMERIC(8,2),
+	location_name	VARCHAR2(20),
+	region_id	NUMERIC(8,2),
+    	db_source VARCHAR2(30),
+	CONSTRAINT	pk_stage_location_id PRIMARY KEY (location_id)
+);
+
+create sequence seq_stage_location
+Minvalue 1
+MaxValue 100000
+Start With 1
+Increment by 1;
+
+
+CREATE OR REPLACE TRIGGER tr_stage_location
+BEFORE INSERT ON stage_location
+FOR EACH ROW 
+BEGIN
+    SELECT seq_stage_location.NEXTVAL INTO :NEW.location_id FROM SYS.DUAL;   
+END tr_stage_location;
+
+create or replace procedure sp_stage_location is 
+    begin 
+            MERGE INTO stage_location t_location
+            USING location s_location
+            ON (t_location.location_code = s_location.location_id and t_location.location_name = s_location.city_name)
+
+            WHEN NOT MATCHED THEN 
+                INSERT (location_code, location_name, region_id, db_source)
+                VALUES (s_location.location_id,s_location.city_name,s_location.region_id,'ps_wales' );
+            
+            MERGE INTO stage_location t_location
+            USING pl_station s_location
+            ON (t_location.location_code = s_location.station_id and t_location.location_name = s_location.station_name)
+
+            WHEN NOT MATCHED THEN 
+                INSERT (location_code, location_name, region_id, db_source)
+                VALUES (s_location.station_id,s_location.STATION_NAME,s_location.fk1_area_id, 'prcs');
+    end sp_stage_location;
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+there are no bad data in location so i must create a bad data for location
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+intentionally created bad data
+	INSERT INTO stage_location VALUES (22, 23, ‘’, 4, prcs);
+	INSERT INTO stage_location VALUES (21,22, ‘’,Null, prcs);
+	INSERT INTO stage_location VALUES (21, 40,  '', 4, '');
+	INSERT INTO stage_location VALUES (41, 30,  'swansea', null, '');
+

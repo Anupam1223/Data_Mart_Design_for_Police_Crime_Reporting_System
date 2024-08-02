@@ -1,0 +1,57 @@
+--------------- generating a seperate table that will help us query easily -----------------------------------------------------------
+CREATE TABLE generate_reports_from_here AS 
+(SELECT sum(total_no_of_crime) total_crime, c.crime_name crime_name, c.status status, p.fullname officer_name, p.gender officer_gender,  
+l.location_name location_name, l.region_name region_name, t.year year, t.month month
+FROM fact_crime_related LEFT JOIN transformation_crime c ON fact_crime_related.crime_id = c.transfer_crime_id  
+            LEFT JOIN dim_police_officer p ON fact_crime_related.officer_id = p.officer_id
+            LEFT JOIN dim_location l ON fact_crime_related.location_id = l.location_id
+            LEFT JOIN dim_time t ON fact_crime_related.time_id = t.time_id 
+            GROUP BY l.location_name, p.fullname, c.crime_name, t.year, t.month,t.day, c.status, p.gender, l.region_name);
+--------------------------------------------------------------------------------------------------------------------------------------
+
+----------- number of cases solved in a year -----------------------------------------------------------------------------------------
+SELECT sum(total_crime), officer_name, location from generate_reports_from_here 
+WHERE floor(months_between(closed_date , reported_date)/12) < 1 GROUP BY officer_name, location;
+--------------------------------------------------------------------------------------------------------------------------------------
+
+------------ crime pending for longer period------------------------------------------------------------------------------------------
+SELECT sum(total_crime), crime_name from 
+generate_reports_from_here WHERE status = 'OPEN'
+ GROUP BY crime_name; 
+-------------------------------------------------------------------------------------------------------------------------------------
+
+------------------ where officer are not assigned according to location -------------------------------------------------------------
+SELECT sum(total_crime), location from 
+generate_reports_from_here WHERE officer_name is null GROUP BY location; 
+-------------------------------------------------------------------------------------------------------------------------------------
+
+------------------ types of crime which are being escalated more --------------------------------------------------------------------
+SELECT sum(total_crime), crime_name from 
+generate_reports_from_here WHERE status ='ESCALATE' GROUP BY crime_name; 
+-------------------------------------------------------------------------------------------------------------------------------------
+
+----------------- crime type solved by officer according to gender ------------------------------------------------------------------
+SELECT sum(total_crime), crime_name, officer_gender from 
+generate_reports_from_here WHERE status ='CLOSED' GROUP BY crime_name, officer_gender; 
+-------------------------------------------------------------------------------------------------------------------------------------
+
+--------- for helping --------------------
+SELECT * FROM generate_reports_from_here;
+------------------------------------------
+
+--------------- inserting data for clear reports ---------------------------------------------------------------------------------------------
+INSERT INTO generate_reports_from_here VALUES(3, 'car theft', 'OPEN', '01/04/2022', null, null, null, 'Bangor', 'wales');
+INSERT INTO generate_reports_from_here VALUES(6, 'violent crime', 'CLOSED', '09/15/2021', '10/26/2021', null, null, 'Bangor', 'wales');
+
+INSERT INTO generate_reports_from_here VALUES(7, 'theft', 'CLOSED', '12/17/2020', '07/03/2021', null, null, 'Chester', 'North west');
+INSERT INTO generate_reports_from_here VALUES(12, 'violent crime', 'CLOSED', '07/19/2018', '07/28/2018', null, null, 'Chester', 'North west');
+
+INSERT INTO generate_reports_from_here VALUES(44, 'forgery', 'OPEN', '07/19/2019', null, null, null, 'Bath', 'South west');
+        ------------------------------------------------------------------------------------------------------
+
+INSERT INTO generate_reports_from_here VALUES(2, 'Black mail', 'ESCALATE', '06/24/2017', null, 'Finn', 'male', 'Bangor', 'wales');
+INSERT INTO generate_reports_from_here VALUES(8, 'gun violence', 'ESCALATE', '04/26/2016', null, 'Harris', 'male', 'Bangor', 'wales');
+
+INSERT INTO generate_reports_from_here VALUES(7, 'armed robbery', 'ESCALATE', '09/11/2010', null, 'Alizin', 'female', 'Chester', 'North west');
+INSERT INTO generate_reports_from_here VALUES(12, 'murder', 'ESCALATE', '09/11/2010', null, 'Ulzifqar alitan', 'male', 'Chester', 'North west');
+----------------------------------------------------------------------------------------------------------------------------------------------

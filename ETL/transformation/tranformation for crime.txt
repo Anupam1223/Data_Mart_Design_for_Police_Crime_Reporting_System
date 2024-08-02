@@ -1,0 +1,19 @@
+drop table transformation_crime;
+delete from transformation_crime;
+select * from transformation_crime;
+
+CREATE TABLE transformation_crime(
+    	transfer_crime_id NUMERIC(8,2) NOT NULL,
+	crime_code	NUMERIC(8,2),
+	crime_name	VARCHAR2(20),
+	status	VARCHAR2(20),
+	reported_date	DATE,
+   	closed_date	DATE,
+   	police_officer_id NUMERIC(8,2),
+   	location_id NUMERIC(8,2),
+   	table_source VARCHAR2(30),
+	CONSTRAINT	pk_transfer_crime_id PRIMARY KEY (transfer_crime_id) 
+);
+
+INSERT INTO transformation_crime (select * from clean_data_crime)
+

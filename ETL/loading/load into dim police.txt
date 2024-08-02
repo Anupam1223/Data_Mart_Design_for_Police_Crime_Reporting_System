@@ -1,0 +1,44 @@
+-------------- sequence 
+create sequence seq_dim_police
+Minvalue 1
+MaxValue 100000
+Start With 1
+Increment by 1;
+
+---------------- procedure
+CREATE OR REPLACE PROCEDURE sp_load_police_dim AS
+    lv_first_name VARCHAR2(40); lv_middle_name VARCHAR2(40); lv_last_name VARCHAR2(40);
+    lv_police_code NUMERIC(8,2); lv_gender VARCHAR2(10); lv_rank NUMERIC(8,2);
+    lv_full_name VARCHAR2(100); lv_row_exists NUMERIC(8,2);
+    CURSOR cursor_from_source IS
+        SELECT police_code, police_first_name , police_middle_name, police_last_name, gender, rank
+        FROM transformation_police;
+BEGIN
+    OPEN cursor_from_source;
+    LOOP
+        FETCH cursor_from_source into lv_police_code, lv_first_name, lv_middle_name, lv_last_name, lv_gender, lv_rank;
+        EXIT WHEN cursor_from_source%NOTFOUND;
+
+        if lv_middle_name IS NOT NULL AND lv_last_name IS NOT NULL THEN
+        lv_full_name := lv_first_name || ' ' || lv_middle_name || ' ' || lv_last_name;
+
+        ELSIF lv_middle_name IS NULL AND lv_last_name IS NOT NULL THEN
+        lv_full_name := lv_first_name || ' ' || lv_last_name;
+
+        ELSE
+        lv_full_name := lv_first_name;
+        END IF;
+
+        SELECT COUNT(*) INTO lv_row_exists FROM DIM_POLICE_OFFICER WHERE officer_code = lv_police_code AND gender = lv_gender AND fullname = lv_full_name;
+
+        IF lv_row_exists = 0 THEN
+            INSERT INTO dim_police_officer VALUES (seq_dim_police.NEXTVAL, lv_full_name, lv_gender, lv_rank, lv_police_code);
+        END IF;
+
+    END LOOP;
+    CLOSE cursor_from_source;
+END sp_load_police_dim;
+
+begin
+sp_load_police_dim;
+end;

@@ -1,0 +1,39 @@
+---------------- procedure
+CREATE OR REPLACE PROCEDURE sp_load_crime_dim AS
+    lv_crime_name VARCHAR2(50); 
+    lv_status VARCHAR2(10);
+    lv_reported_date DATE;
+    lv_closed_date DATE;
+    lv_crime_code NUMERIC(8,2);
+    lv_row_exists NUMERIC(8,2);
+    lv_transfer_id NUMERIC(8,2);
+    CURSOR cursor_from_source IS
+        SELECT reported_date, closed_date , crime_code, crime_name, status, transfer_crime_id
+        FROM transformation_crime;
+BEGIN
+    OPEN cursor_from_source;
+    LOOP
+        FETCH cursor_from_source into lv_reported_date, lv_closed_date, lv_crime_code, lv_crime_name, lv_status, lv_transfer_id;
+        EXIT WHEN cursor_from_source%NOTFOUND;
+
+        SELECT COUNT(*) INTO lv_row_exists FROM DIM_CRIME WHERE crime_code = lv_crime_code 
+	AND status = lv_status AND crime_name = lv_crime_name AND crime_id = lv_transfer_id;
+
+        IF lv_row_exists = 0 AND lv_reported_date IS NOT NULL AND lv_closed_date IS NOT NULL THEN
+            INSERT INTO dim_crime VALUES (lv_transfer_id, lv_crime_name, lv_status, 'y', 'y', lv_crime_code );
+        
+        ELSIF lv_row_exists = 0 AND lv_reported_date IS NOT NULL AND lv_closed_date IS NULL THEN
+            INSERT INTO dim_crime VALUES (lv_transfer_id, lv_crime_name, lv_status, 'y', 'n', lv_crime_code );
+
+        ELSE
+	        EXIT;
+        END IF;
+    END LOOP;
+    CLOSE cursor_from_source;
+END sp_load_crime_dim;
+
+begin
+sp_load_crime_dim;
+end;
+
+select * from dim_crime;
